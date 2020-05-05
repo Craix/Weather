@@ -4,32 +4,33 @@ package com.example.weatherapp.DTO;
 public class dto {
 
     private int id;
-
+    private Main main;
     private String name;
-
-    public String getName() {
-        return name;
-    }
+    private Coord coord;
+    private Wind wind;
+    private Weather[] weather;
 
     public int getId() {
         return id;
     }
 
-    private Coord coord;
+    public Main getMain() {
+        return main;
+    }
+
+    public String getName() {
+        return name;
+    }
 
     public Coord getCoord() {
         return coord;
     }
 
-    private Wind wind;
-
     public Wind getWind() {
         return wind;
     }
 
-    private Main main;
-
-    public Main getMain() {
-        return main;
+    public Weather[] getWeather() {
+        return weather;
     }
 }

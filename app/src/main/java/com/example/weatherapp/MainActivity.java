@@ -3,25 +3,23 @@ package com.example.weatherapp;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
-
-import java.text.Normalizer;
-import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
     int LAUNCH_SECOND_ACTIVITY = 1;
     EditText input;
-
 
     public SpannableStringBuilder TextProperies(String Colors, String noColor)
     {
@@ -47,11 +45,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void Weather(View view) {
 
-        String text = input.getText().toString();
+        if(isConnected()) {
+            String text = input.getText().toString();
 
-        Intent i = new Intent(this, Weather.class);
-        i.putExtra("NAME",text);
-        startActivityForResult(i, LAUNCH_SECOND_ACTIVITY);
+            Intent i = new Intent(this, WeatherActivity.class);
+            i.putExtra("NAME", text);
+            startActivityForResult(i, LAUNCH_SECOND_ACTIVITY);
+        }
+        else
+        {
+            input.setText(TextProperies("NO INTERNET CONNECTION", ""));
+        }
     }
 
     @Override
@@ -75,5 +79,19 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE);
         String data = sharedPreferences.getString("NAME_KEY", "City Name");
         input.setText(data);
+    }
+
+    private boolean isConnected() {
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
+                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
+            //we are connected to a network
+            return true;
+        }
+
+        return false;
+
     }
 }

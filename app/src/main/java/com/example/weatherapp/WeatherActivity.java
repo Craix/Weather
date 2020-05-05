@@ -1,18 +1,24 @@
 package com.example.weatherapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.weatherapp.DTO.dto;
+import com.squareup.picasso.Picasso;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -20,12 +26,16 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class Weather extends AppCompatActivity {
+public class WeatherActivity extends AppCompatActivity {
 
     TextView output1, output0;
+    SwipeRefreshLayout swipeRefresh;
+    String city_name = "";
+    ImageView image;
 
     private final String appid = "749561a315b14523a8f5f1ef95e45864";
     private final String units= "metric";
+    private final String image_url = "http://openweathermap.org/img/wn/10d@2x.png";
 
     public SpannableStringBuilder TextProperies(String NoColorData, String colorText)
     {
@@ -39,6 +49,12 @@ public class Weather extends AppCompatActivity {
     }
 
     public void sendText(final String name) {
+
+        if(!isConnected())
+        {
+            output1.setText("\n No internet conection");
+            return;
+        }
 
         try {
             Retrofit retrofit = new Retrofit.Builder()
@@ -77,6 +93,8 @@ public class Weather extends AppCompatActivity {
                         output1.append("\n \n");
                         output1.append(TextProperies(" \tHumidity", "\t" + String.valueOf(weather.getMain().getHumidity())  + " %"));
 
+                        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/"+ weather.getWeather()[0].getIcon() +"@2x.png").into(image);
+
                         saveData(name);
 
                     }
@@ -99,12 +117,49 @@ public class Weather extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
 
-        Intent intent =getIntent();
         output0 = findViewById(R.id.t0);
         output1 = findViewById(R.id.t1);
-        String city_name = intent.getStringExtra("NAME");
+        image = findViewById(R.id.image);
+
+        Intent intent = getIntent();
+        city_name = intent.getStringExtra("NAME");
 
         sendText(removePolishSymbol(city_name));
+
+        swipeRefresh = findViewById(R.id.refresh);
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                sendText(removePolishSymbol(city_name));
+                swipeRefresh.setRefreshing(false);
+            }
+        });
+
+        Thread t = new Thread() {
+
+            @Override
+            public void run()
+            {
+                try {
+                    while (!isInterrupted())
+                    {
+                        Thread.sleep(1000 * 60 * 5);
+                        runOnUiThread(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                               //update
+                                sendText(removePolishSymbol(city_name));
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) { }
+            }
+        };
+
+        t.start();
+
     }
 
     private String removePolishSymbol(String name)
@@ -140,6 +195,20 @@ public class Weather extends AppCompatActivity {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("NAME_KEY", input);
         editor.apply();
+    }
+
+    private boolean isConnected() {
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
+                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
+            //we are connected to a network
+            return true;
+        }
+
+        return false;
+
     }
 }
 
